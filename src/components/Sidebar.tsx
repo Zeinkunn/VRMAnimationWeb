@@ -39,6 +39,52 @@ const BONE_GROUPS = {
     ]
 };
 
+interface SliderInputProps {
+    value: number;
+    onChange: (value: number) => void;
+    min?: number;
+    max?: number;
+    step?: number;
+    className?: string;
+}
+
+const SliderInput: React.FC<SliderInputProps> = ({ value, onChange, min = -3.14, max = 3.14, step = 0.01, className }) => {
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        const handleWheel = (e: WheelEvent) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.1 : -0.1;
+            const newVal = Math.max(min, Math.min(max, value + delta));
+            onChange(newVal);
+        };
+
+        const currentInput = inputRef.current;
+        if (currentInput) {
+            currentInput.addEventListener('wheel', handleWheel, { passive: false });
+        }
+
+        return () => {
+            if (currentInput) {
+                currentInput.removeEventListener('wheel', handleWheel);
+            }
+        };
+    }, [value, onChange, min, max]);
+
+    return (
+        <input
+            ref={inputRef}
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onChange={(e) => onChange(parseFloat(e.target.value))}
+            className={className}
+        />
+    );
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({ vrm, rotations, onRotationChange, onExport, onFileChange, onBoneReset }) => {
     const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({
         Torso: true,
@@ -121,13 +167,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ vrm, rotations, onRotationChan
                                             {['x', 'y', 'z'].map((axis) => (
                                                 <div key={axis} className="flex items-center gap-2">
                                                     <span className="w-3 text-[10px] uppercase text-gray-500 font-bold">{axis}</span>
-                                                    <input
-                                                        type="range"
-                                                        min="-3.14" // Pi
-                                                        max="3.14"
-                                                        step="0.01"
+                                                    <SliderInput
+                                                        min={-3.14} // Pi
+                                                        max={3.14}
+                                                        step={0.01}
                                                         value={rotations[boneName]?.[axis as keyof BoneRotation] || 0}
-                                                        onChange={(e) => onRotationChange(boneName, axis as any, parseFloat(e.target.value))}
+                                                        onChange={(val) => onRotationChange(boneName, axis as any, val)}
                                                         className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400"
                                                     />
                                                     <input
