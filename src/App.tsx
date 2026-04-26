@@ -1,12 +1,22 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Scene } from './components/Scene';
-import { Sidebar } from './components/Sidebar';
+import { Sidebar as InspectorPanel } from './components/Sidebar';
+import { HierarchyPanel } from './components/HierarchyPanel';
 import { Timeline } from './components/Timeline';
+import { Moon, Sun, Save, FolderOpen, Video, Grid3x3, Palette, Monitor } from 'lucide-react';
 import type { BoneRotations, Keyframe } from './types';
 
 function App() {
   const [vrm, setVrm] = useState<any>(null);
   const [rotations, setRotations] = useState<BoneRotations>({});
+  const [expressions, setExpressions] = useState<Record<string, number>>({});
+  const [selectedBone, setSelectedBone] = useState<string | null>(null);
+  const [gizmoMode, setGizmoMode] = useState<'translate' | 'rotate' | 'scale'>('rotate');
+  
+  // Theme & Viewport
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
+  const [bgColor, setBgColor] = useState<string>(''); // empty means use theme default
 
   // Animation State
   const [duration] = useState(10); // seconds
@@ -24,7 +34,9 @@ function App() {
     console.log('VRM set in App', loadedVrm);
   }, []);
 
-  const handleFileChange = useCallback((file: File) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     const url = URL.createObjectURL(file);
     setVrmFile(url);
     setVrm(null); // Reset current vrm
@@ -52,7 +64,7 @@ function App() {
     });
   }, [isPlaying]);
 
-  const handleExport = () => {
+  const handleExportPose = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rotations, null, 2));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
@@ -93,19 +105,9 @@ function App() {
 
   // Interpolation System
   useEffect(() => {
-    // Whenever currentTime changes, calculate new rotations
     if (keyframes.length === 0) return;
 
-    // Sort keyframes
     const sortedKeyframes = [...keyframes].sort((a, b) => a.time - b.time);
-
-    // Find surrounding keyframes
-    // If we have keyframes, we want to interpolate between them.
-    // If time is before first keyframe, use first.
-    // If time is after last, use last.
-
-    // Simplest approach: Interpolate between the two closest frames.
-
     const prevKeyframe = sortedKeyframes.filter(k => k.time <= currentTime).pop();
     const nextKeyframe = sortedKeyframes.find(k => k.time > currentTime);
 
@@ -114,18 +116,14 @@ function App() {
     let newRotations: BoneRotations = {};
 
     if (!prevKeyframe && nextKeyframe) {
-      // Before first keyframe
       newRotations = nextKeyframe.rotations;
     } else if (prevKeyframe && !nextKeyframe) {
-      // After last keyframe
       newRotations = prevKeyframe.rotations;
     } else if (prevKeyframe && nextKeyframe) {
-      // Linear Interpolation
       const t1 = prevKeyframe.time;
       const t2 = nextKeyframe.time;
       const factor = (currentTime - t1) / (t2 - t1);
 
-      // Merge all bones from both
       const allBones = new Set([
         ...Object.keys(prevKeyframe.rotations),
         ...Object.keys(nextKeyframe.rotations)
@@ -144,7 +142,7 @@ function App() {
     }
 
     setRotations(newRotations);
-  }, [currentTime, keyframes, isPlaying]); // Depend on currentTime which updates every frame
+  }, [currentTime, keyframes, isPlaying]);
 
   // Timeline Handlers
   const handleTogglePlay = () => setIsPlaying(p => !p);
@@ -157,16 +155,14 @@ function App() {
     const newKeyframe: Keyframe = {
       id: Math.random().toString(36).substr(2, 9),
       time: currentTime,
-      rotations: JSON.parse(JSON.stringify(rotations)) // Deep copy
+      rotations: JSON.parse(JSON.stringify(rotations))
     };
 
-    // Remove existing keyframe at same time if any (or very close)
     const filtered = keyframes.filter(k => Math.abs(k.time - currentTime) > 0.05);
     setKeyframes([...filtered, newKeyframe]);
   };
 
   const handleDeleteKeyframe = (id: string) => {
-    // Not implemented in UI yet, but handler exists
     setKeyframes(prev => prev.filter(k => k.id !== id));
   };
 
@@ -185,28 +181,120 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-950 text-white">
+    <div className={`flex flex-col h-screen w-screen overflow-hidden text-sm transition-colors duration-200 ${isDarkMode ? 'dark bg-[#111111] text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
+      
+      {/* Top Menu Bar */}
+      <div className="h-10 flex items-center justify-between px-4 border-b bg-white dark:bg-[#1a1a1a] border-gray-300 dark:border-gray-800 shadow-sm z-50 transition-colors">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 font-bold text-blue-600 dark:text-blue-400">
+            <Video size={18} />
+            <span>VRM Animator</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <label className="cursor-pointer px-3 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1.5 text-xs font-medium transition-colors">
+              <FolderOpen size={14} /> Open VRM
+              <input type="file" accept=".vrm" className="hidden" onChange={handleFileChange} />
+            </label>
+            <button onClick={handleExportPose} className="px-3 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1.5 text-xs font-medium transition-colors">
+              <Save size={14} /> Save Pose
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-xs font-mono text-gray-500 dark:text-gray-400">FPS: 60</div>
+          <button 
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
+            title="Toggle Dark/Light Mode"
+          >
+            {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Workspace */}
       <div className="flex flex-1 overflow-hidden">
-        {/* 3D Scene Area */}
-        <div className="flex-1 relative">
-          <Scene vrmFile={vrmFile} onVrmLoaded={handleVrmLoaded} rotations={rotations} />
+        
+        {/* Left Panel: Hierarchy */}
+        <div className="w-64 flex-shrink-0 z-20 shadow-[1px_0_10px_rgba(0,0,0,0.05)] dark:shadow-none">
+          <HierarchyPanel 
+            vrm={vrm}
+            selectedBone={selectedBone}
+            onSelectedBoneChange={setSelectedBone}
+          />
         </div>
 
-        {/* Sidebar Controls */}
-        <div className="w-80 border-l border-gray-800 bg-gray-900 h-full overflow-y-auto z-10">
-          <Sidebar
+        {/* Center: 3D Scene Area */}
+        <div className="flex-1 relative bg-gray-200 dark:bg-black/50 transition-colors overflow-hidden">
+          {/* Viewport Toolbar */}
+          <div className="absolute top-4 left-4 z-10 flex gap-2">
+             <button
+                onClick={() => setShowGrid(!showGrid)}
+                className={`p-1.5 rounded-md shadow-sm border transition-colors backdrop-blur-md flex items-center justify-center ${showGrid ? 'bg-blue-500/20 border-blue-500/50 text-blue-600 dark:text-blue-400' : 'bg-white/50 dark:bg-gray-800/50 border-gray-300/50 dark:border-gray-600/50 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700'}`}
+                title="Toggle Grid"
+             >
+                <Grid3x3 size={16} />
+             </button>
+             
+             {/* Background Color Picker - Fake button that triggers input color */}
+             <div className="relative group">
+                 <label 
+                    className="cursor-pointer p-1.5 rounded-md shadow-sm border bg-white/50 dark:bg-gray-800/50 border-gray-300/50 dark:border-gray-600/50 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 transition-colors backdrop-blur-md flex items-center justify-center"
+                    title="Change Background Color"
+                 >
+                    <Palette size={16} />
+                    <input 
+                       type="color" 
+                       value={bgColor || (isDarkMode ? '#000000' : '#e5e7eb')} 
+                       onChange={(e) => setBgColor(e.target.value)} 
+                       className="absolute opacity-0 w-0 h-0"
+                    />
+                 </label>
+             </div>
+
+             {/* Clear Background */}
+             {bgColor && (
+                 <button
+                    onClick={() => setBgColor('')}
+                    className="p-1.5 rounded-md shadow-sm border bg-white/50 dark:bg-gray-800/50 border-gray-300/50 dark:border-gray-600/50 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-red-500 transition-colors backdrop-blur-md flex items-center justify-center"
+                    title="Reset Background"
+                 >
+                    <Monitor size={16} />
+                 </button>
+             )}
+          </div>
+
+          <Scene 
+            vrmFile={vrmFile} 
+            onVrmLoaded={handleVrmLoaded} 
+            rotations={rotations}
+            expressions={expressions}
+            selectedBone={selectedBone}
+            gizmoMode={gizmoMode}
+            onRotationChange={handleRotationChange}
+            showGrid={showGrid}
+            bgColor={bgColor}
+          />
+        </div>
+
+        {/* Right Panel: Inspector */}
+        <div className="w-72 flex-shrink-0 z-20 shadow-[-1px_0_10px_rgba(0,0,0,0.05)] dark:shadow-none">
+          <InspectorPanel
             vrm={vrm}
             rotations={rotations}
+            expressions={expressions}
+            selectedBone={selectedBone}
+            gizmoMode={gizmoMode}
             onRotationChange={handleRotationChange}
-            onExport={handleExport}
-            onFileChange={handleFileChange}
+            onExpressionChange={(name, val) => setExpressions(prev => ({ ...prev, [name]: val }))}
+            onGizmoModeChange={setGizmoMode}
             onBoneReset={handleBoneReset}
           />
         </div>
       </div>
 
-      {/* Timeline Area */}
-      <div className="h-48 z-20">
+      {/* Bottom Panel: Timeline */}
+      <div className="h-56 z-30 shadow-[0_-1px_10px_rgba(0,0,0,0.05)] dark:shadow-none">
         <Timeline
           currentTime={currentTime}
           duration={duration}
