@@ -3,7 +3,7 @@ import { Scene } from './components/Scene';
 import { Sidebar as InspectorPanel } from './components/Sidebar';
 import { HierarchyPanel } from './components/HierarchyPanel';
 import { Timeline } from './components/Timeline';
-import { Moon, Sun, Save, FolderOpen, Video, Grid3x3, Palette, Monitor } from 'lucide-react';
+import { Moon, Sun, Save, FolderOpen, Video, Grid3x3, Palette, Monitor, Info, X } from 'lucide-react';
 import type { BoneRotations, Keyframe } from './types';
 
 function App() {
@@ -13,10 +13,11 @@ function App() {
   const [selectedBone, setSelectedBone] = useState<string | null>(null);
   const [gizmoMode, setGizmoMode] = useState<'translate' | 'rotate' | 'scale'>('rotate');
   
-  // Theme & Viewport
+  // Theme & Viewport & UI State
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   const [bgColor, setBgColor] = useState<string>(''); // empty means use theme default
+  const [showAbout, setShowAbout] = useState(false);
 
   // Animation State
   const [duration] = useState(10); // seconds
@@ -198,6 +199,9 @@ function App() {
             <button onClick={handleExportPose} className="px-3 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1.5 text-xs font-medium transition-colors">
               <Save size={14} /> Save Pose
             </button>
+            <button onClick={() => setShowAbout(true)} className="px-3 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1.5 text-xs font-medium transition-colors">
+              <Info size={14} /> About
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -311,6 +315,41 @@ function App() {
           onExport={handleExportAnimation}
         />
       </div>
+
+      {/* About Modal */}
+      {showAbout && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full relative">
+            <button 
+              onClick={() => setShowAbout(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2 text-blue-600 dark:text-blue-400">
+              <Video size={24} /> VRM Animator Maker
+            </h2>
+            <div className="space-y-4 text-gray-600 dark:text-gray-300">
+              <p>
+                A professional, web-based 3D animation tool for VRM avatars.
+              </p>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700/50">
+                <p className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Created By</p>
+                <p className="text-blue-500 font-mono">Zeinkunn</p>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-900/50">
+                <p className="font-semibold text-green-800 dark:text-green-400 mb-1">Commercial Use License</p>
+                <p className="text-sm">
+                  This software is licensed for commercial use. You are free to use it for creating animations, videos, and professional projects without restrictions on monetization.
+                </p>
+              </div>
+              <p className="text-xs text-gray-400 text-center pt-2">
+                &copy; {new Date().getFullYear()} Zeinkunn. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

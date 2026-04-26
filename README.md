@@ -9,61 +9,39 @@ A web application built with React, TypeScript, and Vite for loading and animati
 - **Granular Bone Control**: Precise control over individual bone rotations, including limbs and fingers.
 - **Pose Export system**: Save and export your custom poses as JSON data.
 - **Modern UI**: Clean and responsive user interface styled with Tailwind CSS.
+- **Professional Layout**: 4-panel UI inspired by industry standards (Blender, Live2D Cubism).
+- **Dark/Light Mode**: Aesthetic and comfortable viewing in any environment.
+- **Bone Manipulation**: 3D Gizmo (Translate, Rotate, Scale) with real-time feedback.
+- **Expression Control**: Sliders for facial blendshapes.
+- **Timeline & Dope Sheet**: Add keyframes, scrub through time, and visualize your animation.
+- **Export Capabilities**: Save your pose data or animation as JSON.
 
-## Tech Stack
+## Author & License
 
-- **Core**: [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/)
-- **3D & VRM**: 
-  - [Three.js](https://threejs.org/)
-  - [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber)
-  - [@react-three/drei](https://github.com/pmndrs/drei)
-  - [@pixiv/three-vrm](https://github.com/pixiv/three-vrm)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/), [clsx](https://github.com/lukeed/clsx), [tailwind-merge](https://github.com/dcastil/tailwind-merge)
-- **Icons**: [Lucide React](https://lucide.dev/)
+- **Created By**: Zeinkunn
+- **License**: Commercial Use License
+  - This software is fully licensed for commercial use. You are free to use it for creating animations, videos, and professional projects without restrictions on monetization.
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js (Latest LTS version recommended)
-- npm
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <your-repo-url>
-   cd VRM-Animation-web
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Running the Application
-
-Start the development server:
+## Development Setup
 
 ```bash
+# Install dependencies
+npm install
+
+# Start the development server
 npm run dev
 ```
 
-The application will be available at standard Vite port, usually `http://localhost:5173`.
+## Technologies Used
 
-### Building for Production
-
-Create a production-ready build:
-
-```bash
-npm run build
-```
-
-To preview the production build locally:
-
-```bash
-npm run preview
-```
+- React 19
+- Three.js
+- React Three Fiber (`@react-three/fiber`)
+- React Three Drei (`@react-three/drei`)
+- Pixiv Three VRM (`@pixiv/three-vrm`)
+- TailwindCSS
+- Vite
+- TypeScript
 
 ## Project Structure
 
